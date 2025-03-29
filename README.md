@@ -1,6 +1,37 @@
+---
+title: ImageLab Pro
+emoji: 🖼️
+colorFrom: blue
+colorTo: indigo
+sdk: streamlit
+sdk_version: 1.32.0
+app_file: app.py
+pinned: false
+---
+
 # ImageLab Pro: Advanced Image Processing Laboratory
 
-ImageLab Pro is an interactive image processing tool that offers a comprehensive suite of functionalities for manipulating and analyzing digital images. This web application, developed with Streamlit and OpenCV, provides an intuitive interface that allows users of all levels to experiment with advanced image processing techniques.
+This Streamlit application provides a comprehensive suite of image processing tools and filters. Users can upload images and apply various transformations and effects in real-time.
+
+## Features
+
+- Basic image operations (resize, rotate, flip)
+- Color space transformations
+- Various image filters
+- Edge detection
+- Morphological operations
+- Histogram analysis
+- Special effects
+
+Check out the app at [Hugging Face Spaces](https://huggingface.co/spaces/jarondon82/StreamliteProject)
+
+## How to Use
+
+1. Upload an image using the file uploader
+2. Select the desired processing operation from the sidebar
+3. Adjust parameters as needed
+4. View the results in real-time
+5. Download processed images if desired
 
 ## Key Features
 
