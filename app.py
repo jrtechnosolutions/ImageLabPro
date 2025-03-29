@@ -92,22 +92,35 @@ def main():
             st.subheader("Processed Image")
             
             if processing_option == "Basic Operations":
+                st.sidebar.markdown("""
+                ### Basic Operations
+                Transform your image with fundamental operations:
+                - **Resize**: Scale the image up or down
+                - **Rotate**: Rotate the image by any angle
+                - **Flip**: Mirror the image horizontally or vertically
+                - **Brightness/Contrast**: Adjust image lighting
+                - **Color Quantization**: Reduce the number of colors
+                """)
+                
                 operation = st.sidebar.selectbox(
                     "Select Operation",
                     ["Resize", "Rotate", "Flip", "Brightness/Contrast", "Color Quantization"]
                 )
                 
                 if operation == "Resize":
+                    st.sidebar.markdown("Adjust the scale factor to resize the image. Values > 1 enlarge, values < 1 shrink.")
                     scale = st.sidebar.slider("Scale Factor", 0.1, 2.0, 1.0)
                     processed_img = cv2.resize(original_img, None, fx=scale, fy=scale)
                 
                 elif operation == "Rotate":
+                    st.sidebar.markdown("Rotate the image by specifying an angle in degrees. Positive values rotate counter-clockwise.")
                     angle = st.sidebar.slider("Angle", -180, 180, 0)
                     center = (original_img.shape[1] // 2, original_img.shape[0] // 2)
                     matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
                     processed_img = cv2.warpAffine(original_img, matrix, (original_img.shape[1], original_img.shape[0]))
                 
                 elif operation == "Flip":
+                    st.sidebar.markdown("Mirror the image in different directions.")
                     flip_option = st.sidebar.selectbox("Flip Direction", ["Horizontal", "Vertical", "Both"])
                     if flip_option == "Horizontal":
                         processed_img = cv2.flip(original_img, 1)
@@ -117,6 +130,11 @@ def main():
                         processed_img = cv2.flip(original_img, -1)
                 
                 elif operation == "Brightness/Contrast":
+                    st.sidebar.markdown("""
+                    Adjust image brightness and contrast:
+                    - **Brightness**: Negative values darken, positive values brighten
+                    - **Contrast**: Negative values decrease contrast, positive values increase it
+                    """)
                     brightness = st.sidebar.slider("Brightness", -100, 100, 0)
                     contrast = st.sidebar.slider("Contrast", -100, 100, 0)
                     
@@ -139,16 +157,28 @@ def main():
                         processed_img = cv2.addWeighted(processed_img, alpha_c, processed_img, 0, gamma_c)
 
                 elif operation == "Color Quantization":
+                    st.sidebar.markdown("Reduce the number of colors in the image. Lower values create more poster-like effects.")
                     k = st.sidebar.slider("Number of Colors", 2, 16, 8)
                     processed_img = apply_color_quantization(original_img, k)
 
             elif processing_option == "Filtering":
+                st.sidebar.markdown("""
+                ### Image Filtering
+                Apply different filters to smooth or enhance the image:
+                - **Blur**: Simple averaging filter
+                - **Gaussian**: Weighted gaussian smoothing
+                - **Median**: Good for removing salt-and-pepper noise
+                - **Bilateral**: Edge-preserving smoothing
+                - **Custom Kernel**: Apply specific filter effects
+                """)
+                
                 filter_type = st.sidebar.selectbox(
                     "Select Filter",
                     ["Blur", "Gaussian", "Median", "Bilateral", "Custom Kernel"]
                 )
                 
                 if filter_type == "Custom Kernel":
+                    st.sidebar.markdown("Apply predefined kernel effects. Larger kernel sizes create stronger effects.")
                     kernel_size = st.sidebar.slider("Kernel Size", 3, 7, 3, step=2)
                     kernel_type = st.sidebar.selectbox("Kernel Type", ["Sharpen", "Edge Detection", "Emboss"])
                     
@@ -161,21 +191,39 @@ def main():
                     
                     processed_img = cv2.filter2D(original_img, -1, kernel)
                 else:
+                    st.sidebar.markdown("Adjust kernel size to control the strength of the filter effect.")
                     kernel_size = st.sidebar.slider("Kernel Size", 3, 15, 3, step=2)
                     
-                    if filter_type == "Blur":
-                        processed_img = cv2.blur(original_img, (kernel_size, kernel_size))
-                    elif filter_type == "Gaussian":
-                        processed_img = cv2.GaussianBlur(original_img, (kernel_size, kernel_size), 0)
-                    elif filter_type == "Median":
-                        processed_img = cv2.medianBlur(original_img, kernel_size)
-                    elif filter_type == "Bilateral":
+                    if filter_type == "Bilateral":
+                        st.sidebar.markdown("""
+                        Bilateral Filter Parameters:
+                        - **d**: Diameter of pixel neighborhood
+                        - **Sigma Color**: Filter sigma in color space
+                        - **Sigma Space**: Filter sigma in coordinate space
+                        """)
                         d = st.sidebar.slider("d", 1, 15, 9)
                         sigma_color = st.sidebar.slider("Sigma Color", 1, 255, 75)
                         sigma_space = st.sidebar.slider("Sigma Space", 1, 255, 75)
                         processed_img = cv2.bilateralFilter(original_img, d, sigma_color, sigma_space)
+                    else:
+                        if filter_type == "Blur":
+                            processed_img = cv2.blur(original_img, (kernel_size, kernel_size))
+                        elif filter_type == "Gaussian":
+                            processed_img = cv2.GaussianBlur(original_img, (kernel_size, kernel_size), 0)
+                        elif filter_type == "Median":
+                            processed_img = cv2.medianBlur(original_img, kernel_size)
 
             elif processing_option == "Color Spaces":
+                st.sidebar.markdown("""
+                ### Color Spaces
+                Convert the image between different color representations:
+                - **RGB**: Standard Red-Green-Blue color space
+                - **HSV**: Hue-Saturation-Value, useful for color segmentation
+                - **LAB**: Perceptually uniform color space
+                - **YCrCb**: Used in video encoding
+                - **Individual Channels**: View color components separately
+                """)
+                
                 color_space = st.sidebar.selectbox(
                     "Select Color Space",
                     ["RGB", "HSV", "LAB", "YCrCb", "Individual Channels"]
@@ -239,6 +287,15 @@ def main():
                     processed_img = cv2.morphologyEx(original_img, cv2.MORPH_BLACKHAT, kernel)
 
             elif processing_option == "Edge Detection":
+                st.sidebar.markdown("""
+                ### Edge Detection
+                Different methods to detect edges in the image:
+                - **Canny**: Advanced edge detector with thresholds
+                - **Sobel**: Directional gradient detection
+                - **Laplacian**: Detect edges using 2nd derivatives
+                - **Scharr**: More accurate gradient calculation
+                """)
+                
                 detector = st.sidebar.selectbox(
                     "Select Detector",
                     ["Canny", "Sobel", "Laplacian", "Scharr"]
@@ -273,6 +330,19 @@ def main():
                     processed_img = np.uint8(np.absolute(processed_img))
 
             elif processing_option == "Feature Detection":
+                st.sidebar.markdown("""
+                ### Feature Detection
+                Detect interesting points or features in the image:
+                - **Harris Corner**: Detects corner points using intensity changes
+                - **Shi-Tomasi**: More robust corner detection
+                - **FAST**: High-speed corner detection
+                
+                Parameters for Harris Corner:
+                - **Block Size**: Size of neighborhood considered
+                - **Kernel Size**: Aperture parameter for Sobel operator
+                - **k**: Harris detector free parameter
+                """)
+                
                 detector = st.sidebar.selectbox(
                     "Select Detector",
                     ["Harris Corner", "Shi-Tomasi", "FAST"]
@@ -307,6 +377,14 @@ def main():
                     cv2.drawKeypoints(original_img, kp, processed_img, color=(0, 0, 255))
 
             elif processing_option == "Histogram Operations":
+                st.sidebar.markdown("""
+                ### Histogram Operations
+                Analyze and modify image intensity distribution:
+                - **Show Histogram**: Display color/intensity distribution
+                - **Equalization**: Enhance contrast using histogram equalization
+                - **CLAHE**: Contrast Limited Adaptive Histogram Equalization
+                """)
+                
                 operation = st.sidebar.selectbox(
                     "Select Operation",
                     ["Show Histogram", "Equalization", "CLAHE"]
@@ -332,6 +410,14 @@ def main():
                     processed_img = apply_histogram_equalization(original_img, "CLAHE")
 
             elif processing_option == "Advanced Effects":
+                st.sidebar.markdown("""
+                ### Advanced Effects
+                Apply complex image transformations:
+                - **Pencil Sketch**: Convert image to pencil drawing style
+                - **Cartoon**: Create cartoon-like effect
+                - **HDR Effect**: Enhance local details
+                """)
+                
                 effect = st.sidebar.selectbox(
                     "Select Effect",
                     ["Pencil Sketch", "Cartoon", "HDR Effect"]
