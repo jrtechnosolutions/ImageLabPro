@@ -281,8 +281,8 @@ def main():
                 if detector == "Harris Corner":
                     gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
                     block_size = st.sidebar.slider("Block Size", 2, 10, 2)
-                    ksize = st.sidebar.slider("Kernel Size", 3, 31, 3)
-                    k = st.sidebar.slider("k", 0.01, 0.1, 0.04)
+                    ksize = st.sidebar.slider("Kernel Size", 3, 31, 3, step=2)
+                    k = st.sidebar.slider("k", 0.01, 0.1, 0.04, step=0.01)
                     
                     processed_img = original_img.copy()
                     gray = np.float32(gray)
