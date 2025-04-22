@@ -5,7 +5,46 @@ from PIL import Image
 import io
 import matplotlib.pyplot as plt
 
+"""
+Advanced Image Processing Laboratory
+-----------------------------------
+This Streamlit application provides a comprehensive suite of image processing tools
+using OpenCV. Users can upload images and apply various transformations and 
+filters to process and analyze images.
+
+Main features:
+- Basic operations (resize, rotate, flip, brightness/contrast)
+- Filtering (blur, gaussian, median, bilateral)
+- Color space transformations
+- Thresholding techniques
+- Morphological operations
+- Edge and feature detection
+- Histogram analysis and equalization
+- Advanced visual effects
+
+Author: Project 02
+"""
+
 def apply_threshold(image, threshold_type, thresh_value=127, max_value=255):
+    """
+    Apply various thresholding operations to an image.
+    
+    Parameters:
+    -----------
+    image : numpy.ndarray
+        Input grayscale image
+    threshold_type : str
+        Type of thresholding to apply ('Binary', 'Binary Inverse', etc.)
+    thresh_value : int
+        Threshold value (0-255)
+    max_value : int
+        Maximum value to use with the threshold
+        
+    Returns:
+    --------
+    numpy.ndarray
+        Thresholded image
+    """
     if threshold_type == "Binary":
         _, thresh = cv2.threshold(image, thresh_value, max_value, cv2.THRESH_BINARY)
     elif threshold_type == "Binary Inverse":
@@ -25,14 +64,32 @@ def apply_threshold(image, threshold_type, thresh_value=127, max_value=255):
     return thresh
 
 def apply_histogram_equalization(image, method):
+    """
+    Apply histogram equalization to enhance image contrast.
+    
+    Parameters:
+    -----------
+    image : numpy.ndarray
+        Input image (grayscale or color)
+    method : str
+        Equalization method ('Simple' or 'CLAHE')
+        
+    Returns:
+    --------
+    numpy.ndarray
+        Equalized image
+    """
     if method == "Simple":
         if len(image.shape) == 3:
+            # For color images, convert to YUV and equalize Y channel
             img_yuv = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
             img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
             return cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
         else:
+            # For grayscale images
             return cv2.equalizeHist(image)
     elif method == "CLAHE":
+        # Contrast Limited Adaptive Histogram Equalization
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
         if len(image.shape) == 3:
             img_yuv = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
@@ -43,16 +100,43 @@ def apply_histogram_equalization(image, method):
     return image
 
 def apply_color_quantization(image, k):
+    """
+    Reduce the number of colors in an image using K-means clustering.
+    
+    Parameters:
+    -----------
+    image : numpy.ndarray
+        Input color image
+    k : int
+        Number of colors to quantize to
+        
+    Returns:
+    --------
+    numpy.ndarray
+        Color quantized image
+    """
+    # Reshape the image to a 2D array of pixels
     data = np.float32(image).reshape((-1,3))
+    
+    # Define criteria and apply kmeans
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 20, 1.0)
     _, label, center = cv2.kmeans(data, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+    
+    # Convert back to 8-bit values and reshape to original image dimensions
     center = np.uint8(center)
     result = center[label.flatten()]
     return result.reshape(image.shape)
 
 def main():
+    """
+    Main application function that sets up the Streamlit interface and
+    handles all image processing operations.
+    """
+    # Configure the Streamlit page
     st.set_page_config(layout="wide")
     st.title("Advanced Image Processing Laboratory")
+    
+    # Add custom CSS styling
     st.markdown("""
     <style>
     .main {
@@ -64,22 +148,25 @@ def main():
     </style>
     """, unsafe_allow_html=True)
 
-    # Sidebar
+    # Create the sidebar control panel
     st.sidebar.title("Controls Panel")
     uploaded_file = st.sidebar.file_uploader("Upload Image", type=["jpg", "jpeg", "png"])
 
+    # Process the uploaded image if available
     if uploaded_file is not None:
+        # Load the image
         file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
         original_img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
         
         # Create columns for better layout
         col1, col2 = st.columns(2)
         
+        # Display original image
         with col1:
             st.subheader("Original Image")
             st.image(cv2.cvtColor(original_img, cv2.COLOR_BGR2RGB))
 
-        # Main processing options
+        # Main processing options selector
         processing_option = st.sidebar.selectbox(
             "Select Processing Category",
             ["Basic Operations", "Filtering", "Color Spaces", "Thresholding", 
@@ -87,10 +174,11 @@ def main():
              "Histogram Operations", "Advanced Effects"]
         )
 
-        # Process and display result
+        # Process the image based on selected options
         with col2:
             st.subheader("Processed Image")
             
+            # ======= BASIC OPERATIONS SECTION =======
             if processing_option == "Basic Operations":
                 st.sidebar.markdown("""
                 ### Basic Operations
@@ -139,6 +227,7 @@ def main():
                     contrast = st.sidebar.slider("Contrast", -100, 100, 0)
                     
                     processed_img = original_img.copy()
+                    # Apply brightness adjustment
                     if brightness != 0:
                         if brightness > 0:
                             shadow = brightness
@@ -150,6 +239,7 @@ def main():
                         gamma_b = shadow
                         processed_img = cv2.addWeighted(processed_img, alpha_b, processed_img, 0, gamma_b)
                     
+                    # Apply contrast adjustment
                     if contrast != 0:
                         f = 131*(contrast + 127)/(127*(131-contrast))
                         alpha_c = f
@@ -161,6 +251,7 @@ def main():
                     k = st.sidebar.slider("Number of Colors", 2, 16, 8)
                     processed_img = apply_color_quantization(original_img, k)
 
+            # ======= FILTERING SECTION =======
             elif processing_option == "Filtering":
                 st.sidebar.markdown("""
                 ### Image Filtering
@@ -182,6 +273,7 @@ def main():
                     kernel_size = st.sidebar.slider("Kernel Size", 3, 7, 3, step=2)
                     kernel_type = st.sidebar.selectbox("Kernel Type", ["Sharpen", "Edge Detection", "Emboss"])
                     
+                    # Define custom convolution kernels
                     if kernel_type == "Sharpen":
                         kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
                     elif kernel_type == "Edge Detection":
@@ -189,6 +281,7 @@ def main():
                     elif kernel_type == "Emboss":
                         kernel = np.array([[-2,-1,0], [-1,1,1], [0,1,2]])
                     
+                    # Apply the convolution
                     processed_img = cv2.filter2D(original_img, -1, kernel)
                 else:
                     st.sidebar.markdown("Adjust kernel size to control the strength of the filter effect.")
@@ -206,6 +299,7 @@ def main():
                         sigma_space = st.sidebar.slider("Sigma Space", 1, 255, 75)
                         processed_img = cv2.bilateralFilter(original_img, d, sigma_color, sigma_space)
                     else:
+                        # Apply standard filters
                         if filter_type == "Blur":
                             processed_img = cv2.blur(original_img, (kernel_size, kernel_size))
                         elif filter_type == "Gaussian":
@@ -213,6 +307,7 @@ def main():
                         elif filter_type == "Median":
                             processed_img = cv2.medianBlur(original_img, kernel_size)
 
+            # ======= COLOR SPACES SECTION =======
             elif processing_option == "Color Spaces":
                 st.sidebar.markdown("""
                 ### Color Spaces
@@ -229,6 +324,7 @@ def main():
                     ["RGB", "HSV", "LAB", "YCrCb", "Individual Channels"]
                 )
                 
+                # Convert image to selected color space
                 if color_space == "RGB":
                     processed_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2RGB)
                 elif color_space == "HSV":
@@ -239,6 +335,7 @@ def main():
                     processed_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2YCrCb)
                 elif color_space == "Individual Channels":
                     channel = st.sidebar.selectbox("Select Channel", ["Blue", "Green", "Red"])
+                    # Extract the selected color channel
                     if channel == "Blue":
                         processed_img = original_img[:,:,0]
                     elif channel == "Green":
@@ -246,6 +343,7 @@ def main():
                     else:
                         processed_img = original_img[:,:,2]
 
+            # ======= THRESHOLDING SECTION =======
             elif processing_option == "Thresholding":
                 # Convert to grayscale for thresholding
                 gray_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
@@ -255,6 +353,7 @@ def main():
                      "Adaptive Mean", "Adaptive Gaussian", "Otsu"]
                 )
                 
+                # Apply selected thresholding method
                 if threshold_type in ["Binary", "Binary Inverse", "Truncate", "To Zero", "To Zero Inverse"]:
                     thresh_value = st.sidebar.slider("Threshold Value", 0, 255, 127)
                     max_value = st.sidebar.slider("Maximum Value", 0, 255, 255)
@@ -262,15 +361,18 @@ def main():
                 else:
                     processed_img = apply_threshold(gray_img, threshold_type)
 
+            # ======= MORPHOLOGICAL OPERATIONS SECTION =======
             elif processing_option == "Morphological Operations":
                 operation = st.sidebar.selectbox(
                     "Select Operation",
                     ["Erosion", "Dilation", "Opening", "Closing", "Gradient", "Top Hat", "Black Hat"]
                 )
                 
+                # Create structuring element (kernel)
                 kernel_size = st.sidebar.slider("Kernel Size", 3, 15, 5, step=2)
                 kernel = np.ones((kernel_size, kernel_size), np.uint8)
                 
+                # Apply selected morphological operation
                 if operation == "Erosion":
                     processed_img = cv2.erode(original_img, kernel, iterations=1)
                 elif operation == "Dilation":
@@ -286,6 +388,7 @@ def main():
                 elif operation == "Black Hat":
                     processed_img = cv2.morphologyEx(original_img, cv2.MORPH_BLACKHAT, kernel)
 
+            # ======= EDGE DETECTION SECTION =======
             elif processing_option == "Edge Detection":
                 st.sidebar.markdown("""
                 ### Edge Detection
@@ -301,6 +404,7 @@ def main():
                     ["Canny", "Sobel", "Laplacian", "Scharr"]
                 )
                 
+                # Apply selected edge detection method
                 if detector == "Canny":
                     threshold1 = st.sidebar.slider("Threshold 1", 0, 255, 100)
                     threshold2 = st.sidebar.slider("Threshold 2", 0, 255, 200)
@@ -329,6 +433,7 @@ def main():
                         processed_img = cv2.Scharr(gray, cv2.CV_64F, 0, 1)
                     processed_img = np.uint8(np.absolute(processed_img))
 
+            # ======= FEATURE DETECTION SECTION =======
             elif processing_option == "Feature Detection":
                 st.sidebar.markdown("""
                 ### Feature Detection
@@ -348,6 +453,7 @@ def main():
                     ["Harris Corner", "Shi-Tomasi", "FAST"]
                 )
                 
+                # Apply selected feature detection algorithm
                 if detector == "Harris Corner":
                     gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
                     block_size = st.sidebar.slider("Block Size", 2, 10, 2)
@@ -358,6 +464,7 @@ def main():
                     gray = np.float32(gray)
                     dst = cv2.cornerHarris(gray, block_size, ksize, k)
                     dst = cv2.dilate(dst, None)
+                    # Mark corners with red color
                     processed_img[dst > 0.01 * dst.max()] = [0, 0, 255]
                 
                 elif detector == "Shi-Tomasi":
@@ -365,17 +472,21 @@ def main():
                     corners = cv2.goodFeaturesToTrack(gray, 25, 0.01, 10)
                     corners = np.int0(corners)
                     processed_img = original_img.copy()
+                    # Mark corners with red circles
                     for i in corners:
                         x, y = i.ravel()
                         cv2.circle(processed_img, (x, y), 3, [0, 0, 255], -1)
                 
                 elif detector == "FAST":
                     gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
+                    # Create FAST feature detector object
                     fast = cv2.FastFeatureDetector_create()
                     kp = fast.detect(gray, None)
                     processed_img = original_img.copy()
+                    # Draw keypoints
                     cv2.drawKeypoints(original_img, kp, processed_img, color=(0, 0, 255))
 
+            # ======= HISTOGRAM OPERATIONS SECTION =======
             elif processing_option == "Histogram Operations":
                 st.sidebar.markdown("""
                 ### Histogram Operations
@@ -391,6 +502,7 @@ def main():
                 )
                 
                 if operation == "Show Histogram":
+                    # Plot histogram of color channels or grayscale intensity
                     fig, ax = plt.subplots()
                     if len(original_img.shape) == 3:
                         colors = ('b', 'g', 'r')
@@ -409,6 +521,7 @@ def main():
                 elif operation == "CLAHE":
                     processed_img = apply_histogram_equalization(original_img, "CLAHE")
 
+            # ======= ADVANCED EFFECTS SECTION =======
             elif processing_option == "Advanced Effects":
                 st.sidebar.markdown("""
                 ### Advanced Effects
@@ -424,16 +537,21 @@ def main():
                 )
                 
                 if effect == "Pencil Sketch":
+                    # Convert to grayscale and invert
                     gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
                     inv = 255 - gray
+                    # Apply Gaussian blur and divide
                     blur = cv2.GaussianBlur(inv, (21, 21), 0)
                     processed_img = cv2.divide(gray, 255-blur, scale=256.0)
                 
                 elif effect == "Cartoon":
+                    # Process edges
                     gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
                     gray = cv2.medianBlur(gray, 5)
                     edges = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 9, 9)
+                    # Process color
                     color = cv2.bilateralFilter(original_img, 9, 250, 250)
+                    # Combine edges and color
                     processed_img = cv2.bitwise_and(color, color, mask=edges)
                 
                 elif effect == "HDR Effect":
@@ -451,6 +569,7 @@ def main():
                     processed_img_rgb = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
                 else:
                     processed_img_rgb = processed_img
+                # Convert to PIL image and prepare for download
                 pil_img = Image.fromarray(processed_img_rgb)
                 img_bytes = io.BytesIO()
                 pil_img.save(img_bytes, format='PNG')
